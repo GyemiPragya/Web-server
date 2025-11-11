@@ -1,5 +1,7 @@
+
 #include "utils.h"
 #include <stdio.h>
+#include<time.h>
 // Trim whitespace (in-place)
 char *trim_whitespace(char *str) {
     char *end;

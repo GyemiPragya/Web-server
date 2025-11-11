@@ -12,10 +12,15 @@ int log_init(const char *path) {
     mutex_init(&log_mutex);
     if (path == NULL) return -1;
     log_fp = fopen(path, "a");
-    if (!log_fp) return -1;
+    if (!log_fp) {
+        fprintf(stderr, "[ERROR] Could not open log file at '%s': ", path);
+        perror("");
+        return -1;
+    }
     setvbuf(log_fp, NULL, _IOLBF, 0);
     return 0;
 }
+
 
 void log_close(void) {
     mutex_lock(&log_mutex);

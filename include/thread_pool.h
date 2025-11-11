@@ -2,12 +2,14 @@
 #define THREAD_POOL_H
 #include "utils.h"
 
-/* job: client socket + client addr info */
+#include <winsock2.h> // ensure SOCKET is defined
+
 typedef struct {
-    SOCKET client;
-    struct sockaddr_in6 addr6; /* supports IPv4/IPv6 mapped */
-    int addr_len;
+    SOCKET client_sock;
+    const char *client_ip;
+    // Add other job fields if needed
 } job_t;
+
 
 typedef struct thread_pool thread_pool_t;
 
