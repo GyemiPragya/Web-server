@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Visualization</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #FFF5F5; }
+        h1 { color: #C53030; }
+        table { border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 2px solid #FED7D7; padding: 10px; text-align: center; }
+        th { background: #C53030; color: white; }
+        .fault { background: #FED7D7; color: #C53030; font-weight: bold; }
+        .hit { background: #C6F6D5; color: #22543D; font-weight: bold; }
+        .btn { padding: 10px 20px; margin: 5px; background: #C53030; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #9B2C2C; }
+    </style>
+</head>
+<body>
+    <button class="btn" onclick="location.href='index.html'">← Back</button>
+    <h1 id="title">Loading...</h1>
+    <div id="stats"></div>
+    <div id="table"></div>
+    <script>
+        var params = new URLSearchParams(window.location.search);
+        var apiUrl = '/api/visualize?refs=' + params.get('refs') + '&frames=' + params.get('frames') + '&algo=' + params.get('algo');
+        var algo = params.get('algo');
+        var numFrames = parseInt(params.get('frames'));
+        
+        var algoNames = {
+            'fifo': 'FIFO Algorithm',
+            'lru': 'LRU Algorithm',
+            'optimal': 'Optimal Algorithm'
+        };
+        document.getElementById('title').textContent = algoNames[algo] || 'Visualization';
+        
+        fetch(apiUrl)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var steps = data.steps;
+                var faults = 0;
+                for (var i = 0; i < steps.length; i++) {
+                    if (steps[i].fault === 1) faults++;
+                }
+                var hits = steps.length - faults;
+                var hitRate = ((hits / steps.length) * 100).toFixed(1);
+                
+                document.getElementById('stats').innerHTML = 
+                    '<h3>Page Faults: ' + faults + ' | Page Hits: ' + hits + ' | Hit Rate: ' + hitRate + '%</h3>';
+                
+                var html = '<table><thead><tr><th>Frame</th>';
+                for (var i = 0; i < steps.length; i++) {
+                    html += '<th>Step ' + (i+1) + '<br>(Ref: ' + steps[i].ref + ')</th>';
+                }
+                html += '</tr></thead><tbody>';
+                
+                for (var f = 0; f < numFrames; f++) {
+                    html += '<tr><th>Frame ' + (f+1) + '</th>';
+                    for (var i = 0; i < steps.length; i++) {
+                        var val = steps[i].frames[f];
+                        var cellClass = steps[i].fault === 1 ? 'fault' : 'hit';
+                        var displayVal = (val === -1 || val === undefined) ? '-' : val;
+                        html += '<td class="' + cellClass + '">' + displayVal + '</td>';
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
+                document.getElementById('table').innerHTML = html;
+            })
+            .catch(function(err) {
+                document.getElementById('title').textContent = 'Error!';
+                document.getElementById('stats').innerHTML = '<p style="color:red;">Failed to load: ' + err + '</p>';
+            });
+    </script>
+</body>
+</html>

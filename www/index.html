@@ -1,8 +1,258 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>WebServer</title></head>
-  <body>
-    <h1>Hello from Windows-native C WebServer</h1>
-    <p>Thread-pool, rate-limiting, caching, TransmitFile.</p>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Replacement Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFF5F5 0%, #FEF5E7 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(197, 48, 48, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #C53030;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header .icon {
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2D3748;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #FED7D7;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #FFF5F5;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #FC8181;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #A0AEC0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #C53030;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #9B2C2C;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(197, 48, 48, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FED7D7;
+            color: #C53030;
+        }
+
+        .btn-secondary:hover {
+            background: #FC8181;
+            color: white;
+        }
+
+        .error-message {
+            background: #FED7D7;
+            color: #C53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .nav-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .nav-link a {
+            color: #C53030;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="icon">🧠</span>
+                Page Replacement Visualizer
+            </h1>
+            <p>Visualize FIFO, LRU, and Optimal algorithms step-by-step</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="visualizerForm" onsubmit="handleSubmit(event)">
+            <div class="form-group">
+                <label for="refString">Page Reference String (comma-separated)</label>
+                <input 
+                    type="text" 
+                    id="refString" 
+                    placeholder="e.g., 7,0,1,2,0,3,0,4,2,3,0,3,2"
+                    value="7,0,1,2,0,3,0,4"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="frameCount">Number of Frames</label>
+                <input 
+                    type="number" 
+                    id="frameCount" 
+                    min="1" 
+                    max="10" 
+                    value="3"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="algorithm">Page Replacement Algorithm</label>
+                <select id="algorithm" required>
+                    <option value="">-- Select Algorithm --</option>
+                    <option value="fifo">FIFO (First In First Out)</option>
+                    <option value="lru">LRU (Least Recently Used)</option>
+                    <option value="optimal">Optimal</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Start Visualization</button>
+                <button type="reset" class="btn btn-secondary">Clear</button>
+            </div>
+        </form>
+
+        <div class="nav-link">
+            <a href="dashboard.html">View Server Dashboard →</a>
+        </div>
+    </div>
+
+    <script>
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            const refString = document.getElementById('refString').value.trim();
+            const frameCount = document.getElementById('frameCount').value;
+            const algorithm = document.getElementById('algorithm').value;
+            const errorMsg = document.getElementById('errorMessage');
+
+            // Validation
+            if (!refString || !algorithm) {
+                errorMsg.textContent = 'Please fill in all fields!';
+                errorMsg.classList.add('show');
+                return false;
+            }
+
+            // Validate reference string
+            const refs = refString.split(',').map(s => s.trim());
+            const invalidRefs = refs.filter(r => isNaN(r) || r === '');
+            if (invalidRefs.length > 0) {
+                errorMsg.textContent = 'Invalid reference string! Use comma-separated numbers only.';
+                errorMsg.classList.add('show');
+                return false;
+            }
+
+            errorMsg.classList.remove('show');
+
+            // Redirect to visualization page with parameters
+            const url = 'visualize.html?refs=' + encodeURIComponent(refString) + 
+                       '&frames=' + encodeURIComponent(frameCount) + 
+                       '&algo=' + encodeURIComponent(algorithm);
+            
+            window.location.href = url;
+            return false;
+        }
+
+        document.getElementById('visualizerForm').addEventListener('reset', function() {
+            document.getElementById('errorMessage').classList.remove('show');
+        });
+    </script>
+</body>
 </html>
