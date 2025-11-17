@@ -19,8 +19,8 @@ int load_config(const char *filename) {
     printf("[DEBUG] Config file opened successfully!\n");
 
     // Initialize defaults
-    strcpy(g_cfg.listen_addr, "127.0.0.1");
-    g_cfg.listen_port = 8080;
+    strcpy(g_cfg.listen_addr, "0.0.0.0");
+    g_cfg.listen_port = 8000;
     strcpy(g_cfg.document_root, "./www");
     g_cfg.num_threads = 4;
     g_cfg.queue_size = 128;

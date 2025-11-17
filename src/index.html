@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Replacement Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: #2196F3;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav button:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        nav button.active {
+            background-color: rgba(255,255,255,0.4);
+            font-weight: bold;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 90vh;
+        }
+
+        /* Page Sections */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* HOME PAGE */
+        .home-page {
+            background: white;
+            border-radius: 8px;
+            padding: 3rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .home-page h1 {
+            color: #2196F3;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        button.btn {
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button.btn-primary {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        button.btn-primary:hover {
+            background-color: #1976D2;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        button.btn-secondary {
+            background-color: #757575;
+            color: white;
+        }
+
+        button.btn-secondary:hover {
+            background-color: #616161;
+        }
+
+        /* VISUALIZATION PAGE */
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .viz-header h1 {
+            color: #2196F3;
+            font-size: 1.8rem;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .stat-card.faults .stat-value {
+            color: #F44336;
+        }
+
+        .stat-card.hits .stat-value {
+            color: #4CAF50;
+        }
+
+        /* Visualization Grid */
+        .grid-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 2rem;
+        }
+
+        table.frame-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        table.frame-table th,
+        table.frame-table td {
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        table.frame-table th {
+            background-color: #2196F3;
+            color: white;
+            font-weight: 600;
+        }
+
+        table.frame-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table.frame-table td.frame-slot {
+            background-color: #e3f2fd;
+            font-weight: 600;
+        }
+
+        table.frame-table td.hit {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        table.frame-table td.fault {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+
+        table.frame-table td.current {
+            border: 2px solid #2196F3;
+            background-color: #fff9c4;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .slider-control {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .slider-control input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .legend {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        /* DASHBOARD PAGE */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-card h2 {
+            color: #2196F3;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .stats-list {
+            list-style: none;
+        }
+
+        .stats-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stats-list li:last-child {
+            border-bottom: none;
+        }
+
+        .stats-list .label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .stats-list .value {
+            color: #2196F3;
+            font-weight: bold;
+        }
+
+        /* ERROR PAGE */
+        .error-page {
+            background: white;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            color: #F44336;
+            margin-bottom: 1rem;
+        }
+
+        .error-page h1 {
+            color: #F44336;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .error-message {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Input Validation Messages */
+        .error-text {
+            color: #F44336;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .success-text {
+            color: #4CAF50;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .home-page,
+            .error-page {
+                padding: 1.5rem;
+            }
+
+            .stats-panel {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            table.frame-table th,
+            table.frame-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><button class="nav-btn active" data-page="home">Home</button></li>
+            <li><button class="nav-btn" data-page="visualization">Visualization</button></li>
+            <li><button class="nav-btn" data-page="dashboard">Dashboard</button></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- HOME PAGE -->
+        <div id="home" class="page active home-page">
+            <h1>📊 Page Replacement Visualizer</h1>
+            
+            <form id="inputForm">
+                <div class="form-group">
+                    <label for="refString">Page Reference String *</label>
+                    <input type="text" id="refString" placeholder="Example: 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1" required>
+                    <div id="refStringError" class="error-text"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="frameCount">Total Number of Frames *</label>
+                    <input type="number" id="frameCount" min="1" max="10" placeholder="Example: 3" required>
+                    <div id="frameCountError" class="error-text"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="algorithm">Page Replacement Algorithm *</label>
+                    <select id="algorithm" required>
+                        <option value="">-- Select Algorithm --</option>
+                        <option value="fifo">FIFO (First In First Out)</option>
+                        <option value="lru">LRU (Least Recently Used)</option>
+                        <option value="optimal">Optimal</option>
+                    </select>
+                    <div id="algorithmError" class="error-text"></div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Start Visualization</button>
+                    <button type="reset" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- VISUALIZATION PAGE -->
+        <div id="visualization" class="page">
+            <div class="viz-header">
+                <div>
+                    <h1>Visualization</h1>
+                    <p id="algoDisplay" style="color: #999; margin-top: 0.5rem;"></p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="font-size: 0.9rem; color: #999;">Step: <span id="currentStep">0</span></p>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat-card">
+                    <h3>Page Faults</h3>
+                    <div class="stat-value faults" id="faultCount">0</div>
+                </div>
+                <div class="stat-card hits">
+                    <h3>Page Hits</h3>
+                    <div class="stat-value" id="hitCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Hit Rate</h3>
+                    <div class="stat-value" id="hitRate">0%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total References</h3>
+                    <div class="stat-value" id="totalRefs">0</div>
+                </div>
